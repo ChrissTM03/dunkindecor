@@ -17,7 +17,6 @@ const DONAS = [
   "Boston Cream",
   "Glaseada",
   "Rellena Fresa"
-  // ...agrega más tipos aquí
 ];
 
 // Utilidad para crear popups simples
