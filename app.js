@@ -27,13 +27,18 @@ function mostrarPopup(html) {
     popup = document.createElement('div');
     popup.id = 'popup-registro';
     popup.style.position = 'fixed';
-    popup.style.top = '0'; popup.style.left = '0';
-    popup.style.width = '100vw'; popup.style.height = '100vh';
+    popup.style.top = '0';
+    popup.style.left = '0';
+    popup.style.width = '100vw';
+    popup.style.height = '100vh';
     popup.style.background = 'rgba(0,0,0,0.5)';
-    popup.style.display = 'flex'; popup.style.alignItems = 'center'; popup.style.justifyContent = 'center';
+    popup.style.display = 'flex';
+    popup.style.alignItems = 'center';
+    popup.style.justifyContent = 'center';
     document.body.appendChild(popup);
   }
-  popup.innerHTML = `<div style="background:#fff;padding:20px;min-width:300px;max-width:90vw;">${html}</div>`;
+  // Elimina cualquier estilo inline en el div interno:
+  popup.innerHTML = `<div>${html}</div>`;
 }
 function cerrarPopup() {
   let popup = document.getElementById('popup-registro');
@@ -119,7 +124,6 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
           ${!soloVer ? `
             <td>
               <button onclick="window.sumarTemp('${nombre}',1)">+1</button>
-              <button onclick="window.sumarTemp('${nombre}',2)">+2</button>
               <button onclick="window.sumarTemp('${nombre}',5)">+5</button>
               <button onclick="window.sumarTemp('${nombre}',10)">+10</button>
             </td>
@@ -226,9 +230,7 @@ window.agregarDona = function(id) {
     const fecha = document.querySelector('h2').textContent.replace('Registro ', '');
     // Solo actualiza el contenido del popup, no crea uno nuevo
     document.querySelector('#popup-registro').innerHTML =
-      `<div style="background:#fff;padding:20px;min-width:300px;max-width:90vw;">${
-        renderRegistroDetalle(id, { fecha, donas: { ...tempDonas }, generado: false }, false, id.startsWith('temp-'))
-      }</div>`;
+      `<div>${renderRegistroDetalle(id, { fecha, donas: { ...tempDonas }, generado: false }, false, id.startsWith('temp-'))}</div>`;
   }
   input.value = '';
 };
