@@ -1,4 +1,4 @@
-// Configura tu Firebase aquí (debes crear un proyecto en https://console.firebase.google.com/)
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDb4s_h95yOdIoPAoT53W6gFP4iBCC3q9Y",
   authDomain: "dunkindecor.firebaseapp.com",
