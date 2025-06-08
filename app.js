@@ -13,11 +13,23 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const DONAS = [
-  "Anillo Chocoarcoiris",
-  "Boston Cream",
-  "Glaseada",
-  "Rellena Fresa"
-  // ...agrega más tipos aquí
+  "Anillo Choco arcoiris",
+  "Anillo Fresa arcoiris",
+  "Anillo Vainilla arcoiris",
+  "Anillo Chicle arcoiris",
+  "Anillo Avellana",
+  "Anillo Glaseado",
+  "Anillo Vainilla oreo",
+  "Anillo Indecisa",
+  "Rellena Manjar",
+  "Rellena Chocomanjar",
+  "Rellena Carita Feliz",
+  "Rellena Manjar Oreo",
+  "Rellena Cookie Monster",
+  "Rellena Bavaria",
+  "Rellena Boston Cream",
+  "Rellena Mora",
+  "Rellena Mora Glaseada"
 ];
 
 // Utilidad para crear popups simples
