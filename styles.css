@@ -277,7 +277,6 @@ button:hover {
 @media (max-width: 600px) {
   #contenedor-tabla {
     width: 99vw;
-    padding: 0 2vw;
   }
 
   #tabla-registros {
@@ -287,8 +286,8 @@ button:hover {
   }
 
   #tabla-registros table {
-    width: 98vw;
-    min-width: 600px;
+    width: 100vw;
+    min-width: 425px;
     font-size: 0.95em;
     border-radius: 10px;
   }
@@ -329,5 +328,17 @@ button:hover {
     align-items: stretch;
     background: #fff !important;
     color: #23232b !important;
+  }
+
+  #popup-registro td:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  #popup-registro td:last-child button {
+    width: 100%;
+    margin: 0;
   }
 }
