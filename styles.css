@@ -175,6 +175,8 @@ button:hover {
   padding: 32px 24px;
   min-width: 340px;
   max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
   background: #fff; /* Fondo claro para el popup */
   position: relative;
   border: 2px solid var(--color-principal);
