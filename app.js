@@ -63,13 +63,26 @@ function renderTablaRegistros(registros) {
   const contenedor = document.getElementById('tabla-registros');
   contenedor.innerHTML = ''; // Limpia el contenedor antes de agregar la tabla
   const tabla = document.createElement('table');
+  // Ordenar los registros por fecha descendente (más reciente primero)
+  const registrosOrdenados = Object.entries(registros).sort((a, b) => {
+    // Extraer fechas en formato dd-mm-aaaa y convertirlas a objetos Date
+    const [da, ma, aa] = a[1].fecha.split('-');
+    const [db, mb, ab] = b[1].fecha.split('-');
+    const fechaA = new Date(`${aa}-${ma}-${da}`);
+    const fechaB = new Date(`${ab}-${mb}-${db}`);
+    // Si las fechas son iguales, usar la clave (id) para desempatar (más reciente primero)
+    if (fechaA.getTime() === fechaB.getTime()) {
+      return b[0].localeCompare(a[0]);
+    }
+    return fechaB - fechaA;
+  });
   tabla.innerHTML = `
     <tr>
       <th>Fecha</th>
       <th>Estado</th>
       <th>Acciones</th>
     </tr>
-    ${Object.entries(registros).map(([id, data]) => `
+    ${registrosOrdenados.map(([id, data]) => `
       <tr>
         <td>${data.fecha}</td>
         <td>${data.generado ? 'GENERADO' : 'EDITABLE'}</td>
@@ -107,6 +120,29 @@ window.sumarTemp = function(nombre, cantidad) {
   tempDonas[nombre] = (tempDonas[nombre] || 0) + cantidad;
   let td = document.getElementById('total-' + nombre);
   if (td) td.textContent = tempDonas[nombre];
+  // Obtener el id del registro actual de manera segura
+  const btn = document.querySelector('#popup-registro button[onclick*="guardarRegistro"], #popup-registro button[onclick*="generarRegistro"]');
+  if (btn) {
+    const id = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+    if (!id.startsWith('temp-')) {
+      guardarAuto(id);
+    }
+  }
+};
+
+// NUEVO: función para restar
+window.restarTemp = function(nombre, cantidad) {
+  tempDonas[nombre] = Math.max(0, (tempDonas[nombre] || 0) - cantidad);
+  let td = document.getElementById('total-' + nombre);
+  if (td) td.textContent = tempDonas[nombre];
+  // Obtener el id del registro actual de manera segura
+  const btn = document.querySelector('#popup-registro button[onclick*="guardarRegistro"], #popup-registro button[onclick*="generarRegistro"]');
+  if (btn) {
+    const id = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+    if (!id.startsWith('temp-')) {
+      guardarAuto(id);
+    }
+  }
 };
 
 // Renderiza el detalle de un registro (modo visualización o edición)
@@ -138,6 +174,7 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
               <button onclick="window.sumarTemp('${nombre}',1)">+1</button>
               <button onclick="window.sumarTemp('${nombre}',5)">+5</button>
               <button onclick="window.sumarTemp('${nombre}',10)">+10</button>
+              <button onclick="window.restarTemp('${nombre}',1)">-1</button>
             </td>
           ` : ''}
         </tr>
@@ -246,3 +283,16 @@ window.agregarDona = function(id) {
   }
   input.value = '';
 };
+
+// Guardar automáticamente si no es un registro nuevo
+function guardarAuto(id) {
+  // Solo guarda si NO es un registro nuevo (id real de Firebase)
+  if (!id.startsWith('temp-')) {
+    const fechaStr = getFechaStr();
+    db.ref('registros/' + id).set({
+      fecha: fechaStr,
+      donas: { ...tempDonas },
+      generado: false
+    });
+  }
+}
