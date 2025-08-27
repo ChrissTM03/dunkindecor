@@ -14,6 +14,7 @@ const db = firebase.database();
 
 const DONAS = [
   "Anillo Choco arcoiris",
+  "Anillo Chocolate",
   "Anillo Fresa arcoiris",
   "Anillo Vainilla arcoiris",
   "Anillo Chicle arcoiris",
@@ -29,7 +30,11 @@ const DONAS = [
   "Rellena Bavaria",
   "Rellena Boston Cream",
   "Rellena Mora",
-  "Rellena Mora Glaseada"
+  "Rellena Mora Glaseada",
+  "Antojito Manjar",
+  "Antojito Glaseado",
+  "Antojito Mora",
+  "Antojito Bavaria"
 ];
 
 // Utilidad para crear popups simples
@@ -155,8 +160,20 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
     tempDonas = { ...data.donas };
   }
 
-  // Lista de donas para este registro (predefinidas + agregadas)
-  const todasLasDonas = Array.from(new Set([...Object.keys(tempDonas), ...DONAS]));
+  // Mostrar solo las donas guardadas si es soloVer (generado)
+  const todasLasDonas = soloVer
+    ? Object.keys(data.donas)
+    : Array.from(new Set([...Object.keys(tempDonas), ...DONAS]));
+
+  // Calcular totales por tipo
+  let totalAnillos = 0, totalRellenas = 0, totalAntojitos = 0;
+  Object.entries(tempDonas).forEach(([nombre, cantidad]) => {
+    if (cantidad > 0) {
+      if (nombre.toUpperCase().startsWith("ANILLO")) totalAnillos += cantidad;
+      else if (nombre.toUpperCase().startsWith("RELLENA")) totalRellenas += cantidad;
+      else if (nombre.toUpperCase().startsWith("ANTOJITO")) totalAntojitos += cantidad;
+    }
+  });
 
   let html = `<h2>Registro ${data.fecha}</h2>
     <table>
@@ -180,6 +197,11 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
         </tr>
       `).join('')}
     </table>
+    <div style="margin:15px 0 10px 0; font-weight:bold;">
+      <label>ANILLOS: <span id="total-anillos">${totalAnillos}</span></label> &nbsp;&nbsp;
+      <label>RELLENAS: <span id="total-rellenas">${totalRellenas}</span></label> &nbsp;&nbsp;
+      <label>ANTOJITOS: <span id="total-antojitos">${totalAntojitos}</span></label>
+    </div>
     ${!soloVer ? `
       <div style="margin:10px 0;">
         <input type="text" id="nueva-dona" placeholder="Nuevo sabor de dona" style="margin-right:5px;">
@@ -240,10 +262,14 @@ window.guardarRegistro = function(id) {
 // Generar registro (bloquear edición)
 window.generarRegistro = function(id) {
   const fechaStr = getFechaStr();
+  // Filtrar donas con valor distinto de 0
+  const donasFiltradas = Object.fromEntries(
+    Object.entries(tempDonas).filter(([_, cantidad]) => cantidad !== 0)
+  );
   let ref = db.ref('registros/' + id);
   ref.set({
     fecha: fechaStr,
-    donas: { ...tempDonas },
+    donas: donasFiltradas,
     generado: true
   }).then(() => {
     tempDonas = {};
