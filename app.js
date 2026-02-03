@@ -34,6 +34,10 @@ const DONAS = [
   "Antojito Manjar",
   "Antojito Glaseado",
   "Antojito Mora",
+  "Corazon Lineas Rojas",
+  "Corazon Cardioamor",
+  "Corazon DuoAmor 1",
+  "Corazon DuoAmor 2",
   "Antojito Bavaria"
 ];
 
