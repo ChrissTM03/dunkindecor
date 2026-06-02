@@ -14,6 +14,8 @@ const db = firebase.database();
 
 const DONAS = [
   "Anillo Choco arcoiris",
+  "Anillo Si Se Puede",
+  "Anillo Balon Vainilla",
   "Anillo Chocolate",
   "Anillo Fresa arcoiris",
   "Anillo Vainilla arcoiris",
@@ -34,10 +36,8 @@ const DONAS = [
   "Antojito Manjar",
   "Antojito Glaseado",
   "Antojito Mora",
-  "Corazon Lineas Rojas",
-  "Corazon Cardioamor",
-  "Corazon DuoAmor 1",
-  "Corazon DuoAmor 2",
+  "Corazon Tricolor",
+  "Cuadrada Cancha",
   "Antojito Bavaria"
 ];
 
