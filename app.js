@@ -14,7 +14,7 @@ const db = firebase.database();
 
 const DONAS = [
   "Anillo Choco arcoiris",
-  "Anillo Canguil",
+  "Anillo Araña",
   "Anillo Chocolate",
   "Anillo Fresa arcoiris",
   "Anillo Vainilla arcoiris",
@@ -23,9 +23,12 @@ const DONAS = [
   "Anillo Glaseado",
   "Anillo Vainilla oreo",
   "Anillo Indecisa",
+  "Cuadrada Dracula",
   "Rellena Manjar",
   "Rellena Chocomanjar",
   "Rellena Carita Feliz",
+  "Rellena Calavera",
+  "Rellena Frankenstein",
   "Rellena Manjar Oreo",
   "Rellena Cookie Monster",
   "Rellena Bavaria",
