@@ -92,28 +92,10 @@ function cerrarPopup() {
 }
 window.cerrarPopup = cerrarPopup;
 
-// Consolidado: agrega controles discretos sobre la tabla existente, sin modificar styles.css.
+// La tabla principal conserva únicamente los registros; el consolidado se abre en un popup.
 function renderTablaRegistros(registros) {
   const contenedor = document.getElementById('tabla-registros');
   contenedor.innerHTML = '';
-
-  const consolidado = document.createElement('section');
-  consolidado.id = 'consolidado-fechas';
-  consolidado.style.width = '100%';
-  consolidado.style.boxSizing = 'border-box';
-  consolidado.style.margin = '0 0 22px 0';
-  consolidado.style.padding = '14px 0';
-  consolidado.innerHTML = `
-    <h2 style="color:var(--color-principal);margin:8px 0 12px">Consolidado por fechas</h2>
-    <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
-      <label style="color:var(--color-texto)">Desde<br><input id="consolidado-desde" type="date"></label>
-      <label style="color:var(--color-texto)">Hasta<br><input id="consolidado-hasta" type="date"></label>
-      <button type="button" id="btn-consultar-consolidado">Consultar</button>
-      <button type="button" id="btn-limpiar-consolidado">Limpiar</button>
-    </div>
-    <div id="resultado-consolidado" style="margin-top:14px"></div>
-  `;
-  contenedor.appendChild(consolidado);
 
   const tabla = document.createElement('table');
   const registrosOrdenados = Object.entries(registros || {}).sort((a, b) => {
@@ -136,13 +118,51 @@ function renderTablaRegistros(registros) {
     `).join('')}
   `;
   contenedor.appendChild(tabla);
+}
 
-  document.getElementById('btn-consultar-consolidado').onclick = () => consultarConsolidado(registros || {});
+function abrirPopupConsolidado() {
+  const anterior = document.getElementById('popup-consolidado');
+  if (anterior) anterior.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'popup-consolidado';
+  Object.assign(popup.style, {
+    position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
+    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', zIndex: '10000', padding: '12px', boxSizing: 'border-box'
+  });
+  popup.innerHTML = `
+    <div style="border-radius:18px;box-shadow:0 8px 32px rgba(218,24,132,.18);padding:28px 24px;box-sizing:border-box;width:min(760px,95vw);max-height:90vh;overflow:auto;background:#fff;position:relative;border:2px solid var(--color-principal);color:#23232b;">
+      <h2 style="text-align:center;color:var(--color-principal);margin:0 0 20px;font-size:1.3em;letter-spacing:1px;">Consolidado por rango de fechas</h2>
+      <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:18px;">
+        <label style="flex:1;min-width:180px;">Desde<br><input id="consolidado-desde" type="date" style="box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--color-secundario);border-radius:10px;color:#23232b;background:#f7f7f7;"></label>
+        <label style="flex:1;min-width:180px;">Hasta<br><input id="consolidado-hasta" type="date" style="box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--color-secundario);border-radius:10px;color:#23232b;background:#f7f7f7;"></label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-consultar-consolidado">Consultar</button>
+        <button type="button" id="btn-limpiar-consolidado">Limpiar</button>
+        <button type="button" id="btn-cerrar-consolidado">Cerrar</button>
+      </div>
+      <div id="resultado-consolidado"></div>
+    </div>`;
+  document.body.appendChild(popup);
+
+  const consultar = () => {
+    db.ref('registros').once('value')
+      .then(snapshot => consultarConsolidado(snapshot.val() || {}))
+      .catch(error => {
+        const salida = document.getElementById('resultado-consolidado');
+        if (salida) salida.innerHTML = `<p>No se pudo consultar el consolidado: ${error.message}</p>`;
+      });
+  };
+  document.getElementById('btn-consultar-consolidado').onclick = consultar;
   document.getElementById('btn-limpiar-consolidado').onclick = () => {
     document.getElementById('consolidado-desde').value = '';
     document.getElementById('consolidado-hasta').value = '';
     document.getElementById('resultado-consolidado').innerHTML = '';
   };
+  document.getElementById('btn-cerrar-consolidado').onclick = () => popup.remove();
+  popup.addEventListener('click', event => { if (event.target === popup) popup.remove(); });
 }
 
 function consultarConsolidado(registros) {
@@ -158,7 +178,7 @@ function consultarConsolidado(registros) {
     return;
   }
 
-  const registrosDelRango = Object.entries(registros).filter(([, registro]) => {
+  const registrosDelRango = Object.entries(registros || {}).filter(([, registro]) => {
     const fecha = fechaISO(registro?.fecha);
     return fecha && fecha >= desde && fecha <= hasta;
   });
@@ -176,16 +196,18 @@ function consultarConsolidado(registros) {
   salida.innerHTML = `
     <p><strong>Período:</strong> ${fechaDesdeISO(desde)} al ${fechaDesdeISO(hasta)}</p>
     <p><strong>Registros incluidos:</strong> ${registrosDelRango.length}</p>
-    <p><strong>Total general:</strong> ${totales.general}
-      &nbsp; | &nbsp; <strong>Anillos:</strong> ${totales.anillos}
-      &nbsp; | &nbsp; <strong>Rellenas:</strong> ${totales.rellenas}
-      &nbsp; | &nbsp; <strong>Antojitos:</strong> ${totales.antojitos}
-      &nbsp; | &nbsp; <strong>Cuadradas:</strong> ${totales.cuadradas}</p>
+    <p><strong>Total general:</strong> ${totales.general}</p>
+    <p><strong>Anillos:</strong> ${totales.anillos} &nbsp; | &nbsp;
+       <strong>Rellenas:</strong> ${totales.rellenas} &nbsp; | &nbsp;
+       <strong>Antojitos:</strong> ${totales.antojitos} &nbsp; | &nbsp;
+       <strong>Cuadradas:</strong> ${totales.cuadradas}</p>
     ${detalle.length ? `
-      <table>
-        <tr><th>Sabor</th><th>Total en el período</th></tr>
-        ${detalle.map(([nombre, cantidad]) => `<tr><td>${nombre}</td><td>${cantidad}</td></tr>`).join('')}
-      </table>` : '<p>No hay cantidades registradas en ese rango de fechas.</p>'}
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;background:#fff;margin-top:12px;">
+          <tr><th style="padding:10px;background:var(--color-principal);color:#fff;text-align:left;">Sabor</th><th style="padding:10px;background:var(--color-principal);color:#fff;">Total en el período</th></tr>
+          ${detalle.map(([nombre, cantidad]) => `<tr><td style="padding:9px;border-bottom:1px solid #eee;">${nombre}</td><td style="padding:9px;text-align:center;border-bottom:1px solid #eee;">${cantidad}</td></tr>`).join('')}
+        </table>
+      </div>` : '<p>No hay cantidades registradas en ese rango de fechas.</p>'}
   `;
 }
 
@@ -310,6 +332,29 @@ db.ref('registros').on('value', snapshot => {
   renderTablaRegistros(snapshot.val() || {});
 });
 document.getElementById('nuevoRegistroBtn').onclick = nuevoRegistroPopup;
+// Coloca el botón del consolidado junto a Nuevo registro sin alterar index.html ni styles.css.
+(function crearBotonConsolidado() {
+  const botonNuevo = document.getElementById('nuevoRegistroBtn');
+  if (!botonNuevo || document.getElementById('consolidadoBtn')) return;
+  const grupo = document.createElement('div');
+  grupo.id = 'acciones-registros';
+  Object.assign(grupo.style, { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', margin: '30px 0 18px 0' });
+  botonNuevo.parentNode.insertBefore(grupo, botonNuevo);
+  grupo.appendChild(botonNuevo);
+  Object.assign(botonNuevo.style, { margin: '0', display: 'inline-block' });
+  const botonConsolidado = document.createElement('button');
+  botonConsolidado.id = 'consolidadoBtn';
+  botonConsolidado.type = 'button';
+  botonConsolidado.textContent = 'Consolidado';
+  Object.assign(botonConsolidado.style, {
+    padding: '12px 32px', background: 'var(--color-principal)', color: '#fff', border: 'none',
+    borderRadius: '25px', fontSize: '1.1em', fontWeight: '600', cursor: 'pointer'
+  });
+  botonConsolidado.onmouseenter = () => { botonConsolidado.style.background = 'var(--color-secundario)'; };
+  botonConsolidado.onmouseleave = () => { botonConsolidado.style.background = 'var(--color-principal)'; };
+  botonConsolidado.onclick = abrirPopupConsolidado;
+  grupo.appendChild(botonConsolidado);
+})();
 document.getElementById('registro-detalle').innerHTML = '';
 
 window.eliminarRegistro = function(id) {
