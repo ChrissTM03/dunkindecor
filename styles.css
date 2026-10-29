@@ -83,6 +83,25 @@ button:hover {
     color: #343a40;
 }
 
+#consolidadoProdBtn {
+  display: block;
+  align-self: flex-start;
+  margin: 30px 0 18px 0;
+  padding: 12px 32px;
+  background: var(--color-principal);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#consolidadoProdBtn:hover {
+  background: var(--color-secundario);
+}
+
 #nuevoRegistroBtn {
   display: block;
   align-self: flex-start;
