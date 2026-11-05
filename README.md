@@ -18,7 +18,7 @@ La cuenta técnica queda autorizada a leer y escribir registros porque el workfl
 
 ### Reglas y despliegue
 
-El archivo `database.rules.json` deniega el acceso general y permite `/registros` solo a los UID enumerados.
+El archivo `database.rules.json` deniega el acceso general y permite `/registros` solo a los UID enumerados. No agregues validaciones `.validate` debajo de cada registro sin probar el guardado: la app usa una transacción en `/registros` para evitar duplicados por fecha, y Firebase puede volver a validar todos los registros existentes durante esa transacción, bloqueándola si un registro anterior no cumple el esquema.
 
 Instala Firebase CLI, inicia sesión y selecciona `dunkindecor` con `firebase use --add`. Después despliega únicamente las reglas con `firebase deploy --only database`. No uses las reglas `public` ni cambies `.read` o `.write` a `true`.
 
