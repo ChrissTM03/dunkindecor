@@ -1,0 +1,30 @@
+name: Generate daily records
+
+on:
+  schedule:
+    - cron: "5 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-daily-records
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FIREBASE_DATABASE_URL: https://dunkindecor-default-rtdb.firebaseio.com
+      FIREBASE_DATABASE_AUTH_TOKEN: ${{ secrets.FIREBASE_DATABASE_AUTH_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generate ungenerated records from past dates
+        run: python scripts/generate_daily_records.py

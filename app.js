@@ -42,6 +42,35 @@ const DONAS = [
   "Glucosa"
 ];
 
+const CODIGOS_SAP = {
+  "Anillo Choco arcoiris": "91016784",
+  "Anillo Chocolate": "91016789",
+  "Anillo Fresa arcoiris": "91016783",
+  "Anillo Vainilla arcoiris": "91016785",
+  "Anillo Chicle arcoiris": "91016786",
+  "Anillo Avellana": "91016795",
+  "Anillo Glaseado": "91016782",
+  "Anillo Vainilla oreo": "91016787",
+  "Anillo Indecisa": "91016791",
+  "Rellena Manjar": "91016664",
+  "Rellena Chocomanjar": "91016697",
+  "Rellena Carita Feliz": "91016696",
+  "Rellena Manjar Oreo": "91016700",
+  "Rellena Cookie Monster": "91016705",
+  "Rellena Bavaria": "91016665",
+  "Rellena Boston Cream": "91016698",
+  "Rellena Mora": "91016702",
+  "Rellena Mora Glaseada": "91016707",
+  "Antojito Manjar": "91016709",
+  "Antojito Glaseado": "91016708",
+  "Antojito Mora": "91016711",
+  "Antojito Bavaria": "91016710",
+  "Crema Bavaria": "91016727",
+  "Te Limon": "91016776",
+  "Te Arandanos": "91016777",
+  "Glucosa": "91016779"
+};
+
 // Utilidad para crear popups simples
 function mostrarPopup(html) {
   let popup = document.getElementById('popup-registro');
@@ -65,6 +94,7 @@ function cerrarPopup() {
   let popup = document.getElementById('popup-registro');
   if (popup) popup.remove();
   tempDonas = {};
+  tempFechaRegistro = null;
 }
 
 function fechaRegistroComoISO(fecha) {
@@ -239,19 +269,84 @@ function renderTablaRegistros(registros) {
 window.verRegistro = function(id) {
   db.ref('registros/' + id).once('value').then(snapshot => {
     const data = snapshot.val();
-    mostrarPopup(renderRegistroDetalle(id, data, data.generado));
+    if (!data) {
+      alert('No se encontró el registro solicitado.');
+      return;
+    }
+    tempDonas = { ...(data.donas || {}) };
+    tempFechaRegistro = data.fecha;
+    mostrarPopup(renderRegistroDetalle(id, data, !!data.generado));
+  }).catch(error => {
+    console.error('No se pudo cargar el registro.', error);
+    alert('No se pudo cargar el registro. Revisa la conexión e inténtalo de nuevo.');
   });
 };
 
 // Abrir popup para crear un nuevo registro
 function nuevoRegistroPopup() {
-  const fechaStr = getFechaStr();
-  const registro = {};
-  DONAS.forEach(dona => registro[dona] = 0);
+  const boton = document.getElementById('nuevoRegistroBtn');
+  if (boton) boton.disabled = true;
 
-  // Genera un ID temporal para el popup (no se guarda aún)
-  const tempId = 'temp-' + Date.now();
-  mostrarPopup(renderRegistroDetalle(tempId, { fecha: fechaStr, donas: registro, generado: false }, false, true));
+  db.ref('registros').once('value').then(snapshot => {
+    registrosActuales = snapshot.val() || {};
+    const fechaStr = getFechaStr();
+    if (existeRegistroConFecha(registrosActuales, fechaStr)) {
+      alert(`Ya existe un registro para ${fechaStr}. No se puede crear otro con la misma fecha.`);
+      return;
+    }
+
+    const registro = {};
+    DONAS.forEach(dona => registro[dona] = 0);
+    tempDonas = registro;
+    tempFechaRegistro = fechaStr;
+
+    const tempId = 'temp-' + Date.now();
+    mostrarPopup(renderRegistroDetalle(tempId, { fecha: fechaStr, donas: registro, generado: false }, false, true));
+  }).catch(error => {
+    console.error('No se pudo verificar si ya existe un registro para hoy.', error);
+    alert('No se pudo verificar la fecha del registro. Revisa la conexión e inténtalo de nuevo.');
+  }).then(() => {
+    if (boton) boton.disabled = false;
+  });
+}
+
+function existeRegistroConFecha(registros, fecha) {
+  return Object.values(registros || {}).some(registro => registro && registro.fecha === fecha);
+}
+
+function mostrarRegistroBloqueado(id, ref) {
+  ref.once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (data && data.generado) {
+      tempDonas = { ...(data.donas || {}) };
+      tempFechaRegistro = data.fecha;
+      mostrarPopup(renderRegistroDetalle(id, data, true));
+      alert('Este registro ya fue generado y quedó bloqueado para edición.');
+      return;
+    }
+    alert('No se pudo guardar el registro. Puede haber sido eliminado; actualiza la página e inténtalo de nuevo.');
+  }).catch(error => {
+    console.error('No se pudo comprobar el estado del registro.', error);
+    alert('No se pudo confirmar el estado del registro. Revisa la conexión e inténtalo de nuevo.');
+  });
+}
+
+function cantidadDona(nombre) {
+  const cantidad = Number(tempDonas[nombre]);
+  return Number.isFinite(cantidad) ? cantidad : 0;
+}
+
+function actualizarTotalesEspeciales() {
+  const totalTeLimon = document.getElementById('total-te-limon');
+  const totalTeArandanos = document.getElementById('total-te-arandanos');
+  const totalCremaBavaria = document.getElementById('total-crema-bavaria');
+
+  if (totalTeLimon) totalTeLimon.textContent = `${cantidadDona('Te Limon')} OZL`;
+  if (totalTeArandanos) totalTeArandanos.textContent = `${cantidadDona('Te Arandanos')} OZL`;
+  if (totalCremaBavaria) {
+    const onzas = Number((cantidadDona('Crema Bavaria') * 13.4).toFixed(1));
+    totalCremaBavaria.textContent = `${onzas} OZ`;
+  }
 }
 
 // Declarar sumarTemp en el ámbito global
@@ -259,6 +354,7 @@ window.sumarTemp = function(nombre, cantidad) {
   tempDonas[nombre] = (tempDonas[nombre] || 0) + cantidad;
   let td = document.getElementById('total-' + nombre);
   if (td) td.textContent = tempDonas[nombre];
+  actualizarTotalesEspeciales();
   // Obtener el id del registro actual de manera segura
   const btn = document.querySelector('#popup-registro button[onclick*="guardarRegistro"], #popup-registro button[onclick*="generarRegistro"]');
   if (btn) {
@@ -274,6 +370,7 @@ window.restarTemp = function(nombre, cantidad) {
   tempDonas[nombre] = Math.max(0, (tempDonas[nombre] || 0) - cantidad);
   let td = document.getElementById('total-' + nombre);
   if (td) td.textContent = tempDonas[nombre];
+  actualizarTotalesEspeciales();
   // Obtener el id del registro actual de manera segura
   const btn = document.querySelector('#popup-registro button[onclick*="guardarRegistro"], #popup-registro button[onclick*="generarRegistro"]');
   if (btn) {
@@ -284,6 +381,61 @@ window.restarTemp = function(nombre, cantidad) {
   }
 };
 
+window.copiarColumna = async function(boton) {
+  const columna = boton.dataset.copyColumn === 'codigoSap' ? 2 : 1;
+  const filas = boton.closest('table').querySelectorAll('tr');
+  const valores = Array.from(filas).slice(1).map(fila => fila.cells[columna].dataset.copyValue || '');
+  const valor = valores.join('\n');
+  const etiqueta = boton.dataset.copyLabel;
+  try {
+    await copiarTextoAlPortapapeles(valor);
+    boton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 16 16" focusable="false"><path d="m3.5 8.25 3 3 6-6.5"></path></svg>';
+    boton.setAttribute('aria-label', `${etiqueta} copiada`);
+    boton.title = `${etiqueta} copiada`;
+    window.clearTimeout(boton.copyFeedbackTimeout);
+    boton.copyFeedbackTimeout = window.setTimeout(() => {
+      if (!boton.isConnected) return;
+      boton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 16 16" focusable="false"><rect x="5.25" y="2.25" width="8.5" height="10.5" rx="1.5"></rect><path d="M10.75 12.75v1A1.25 1.25 0 0 1 9.5 15h-6A1.25 1.25 0 0 1 2.25 13.75v-9A1.25 1.25 0 0 1 3.5 3.5h1.75"></path></svg>';
+      boton.setAttribute('aria-label', `Copiar toda ${etiqueta}`);
+      boton.title = `Copiar ${etiqueta}`;
+    }, 1500);
+  } catch (error) {
+    console.error(`No se pudo copiar ${etiqueta}.`, error);
+    alert(`No se pudo copiar ${etiqueta}. Inténtalo de nuevo o copia los valores manualmente.`);
+  }
+};
+
+async function copiarTextoAlPortapapeles(valor) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(valor);
+      return;
+    } catch {
+      copiarValorConFallback(valor);
+      return;
+    }
+  }
+  copiarValorConFallback(valor);
+}
+
+function copiarValorConFallback(valor) {
+  const campoTemporal = document.createElement('textarea');
+  campoTemporal.value = valor;
+  campoTemporal.setAttribute('readonly', '');
+  campoTemporal.style.position = 'fixed';
+  campoTemporal.style.opacity = '0';
+  document.body.appendChild(campoTemporal);
+  campoTemporal.select();
+
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('El navegador rechazó la operación de copia.');
+    }
+  } finally {
+    campoTemporal.remove();
+  }
+}
+
 // Renderiza el detalle de un registro (modo visualización o edición)
 function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
   if (!data) data = {};
@@ -293,6 +445,10 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
   if (Object.keys(tempDonas).length === 0) {
     tempDonas = { ...data.donas };
   }
+
+  const totalTeLimon = cantidadDona('Te Limon');
+  const totalTeArandanos = cantidadDona('Te Arandanos');
+  const totalCremaBavaria = Number((cantidadDona('Crema Bavaria') * 13.4).toFixed(1));
 
   // Mostrar solo las donas guardadas si es soloVer (generado)
   const todasLasDonas = soloVer
@@ -310,31 +466,48 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
   });
 
   let html = `<h2 id="registro-title">Registro ${data.fecha}</h2>
-    <table>
-      <tr>
-        <th>Nombre Dona</th>
-        <th>Total</th>
-        ${!soloVer ? '<th>Sumar</th>' : ''}
-      </tr>
-      ${todasLasDonas.map(nombre => `
+    <table class="${soloVer ? 'generated-record-table' : ''}">
+      <thead>
         <tr>
-          <td>${nombre}</td>
-          <td id="total-${nombre}">${tempDonas[nombre] || 0}</td>
+          <th>Nombre Dona</th>
+          <th>${soloVer ? '<div class="column-copy-header"><span>Cantidad</span><button class="copy-button" type="button" data-copy-column="cantidad" data-copy-label="la columna Cantidad" aria-label="Copiar toda la columna Cantidad" title="Copiar columna Cantidad" onclick="window.copiarColumna(this)"><svg aria-hidden="true" viewBox="0 0 16 16" focusable="false"><rect x="5.25" y="2.25" width="8.5" height="10.5" rx="1.5"></rect><path d="M10.75 12.75v1A1.25 1.25 0 0 1 9.5 15h-6A1.25 1.25 0 0 1 2.25 13.75v-9A1.25 1.25 0 0 1 3.5 3.5h1.75"></path></svg></button></div>' : 'Cantidad'}</th>
+          ${soloVer ? '<th><div class="column-copy-header"><span>Código SAP</span><button class="copy-button" type="button" data-copy-column="codigoSap" data-copy-label="la columna Código SAP" aria-label="Copiar toda la columna Código SAP" title="Copiar columna Código SAP" onclick="window.copiarColumna(this)"><svg aria-hidden="true" viewBox="0 0 16 16" focusable="false"><rect x="5.25" y="2.25" width="8.5" height="10.5" rx="1.5"></rect><path d="M10.75 12.75v1A1.25 1.25 0 0 1 9.5 15h-6A1.25 1.25 0 0 1 2.25 13.75v-9A1.25 1.25 0 0 1 3.5 3.5h1.75"></path></svg></button></div></th>' : ''}
+          ${!soloVer ? '<th>Sumar</th>' : ''}
+        </tr>
+      </thead>
+      <tbody>
+      ${todasLasDonas.map(nombre => {
+        const cantidad = tempDonas[nombre] || 0;
+        const cantidadGenerada = nombre === 'Crema Bavaria'
+          ? Number((Number(cantidad) * 13.4).toFixed(1))
+          : cantidad;
+        const codigoSap = Object.prototype.hasOwnProperty.call(CODIGOS_SAP, nombre)
+          ? CODIGOS_SAP[nombre]
+          : '';
+        return `
+        <tr>
+          <td>${escaparHTML(nombre)}</td>
+          <td id="total-${escaparHTML(nombre)}"${soloVer ? ` data-copy-value="${escaparHTML(cantidadGenerada)}"` : ''}>${escaparHTML(soloVer ? cantidadGenerada : cantidad)}</td>
+          ${soloVer ? `<td data-copy-value="${escaparHTML(codigoSap)}">${escaparHTML(codigoSap)}</td>` : ''}
           ${!soloVer ? `
             <td>
-              <button onclick="window.sumarTemp('${nombre}',1)">+1</button>
-              <button onclick="window.sumarTemp('${nombre}',5)">+5</button>
-              <button onclick="window.sumarTemp('${nombre}',10)">+10</button>
-              <button onclick="window.restarTemp('${nombre}',1)">-1</button>
+              <button data-flavor="${escaparHTML(nombre)}" onclick="window.sumarTemp(this.dataset.flavor,1)">+1</button>
+              <button data-flavor="${escaparHTML(nombre)}" onclick="window.sumarTemp(this.dataset.flavor,5)">+5</button>
+              <button data-flavor="${escaparHTML(nombre)}" onclick="window.sumarTemp(this.dataset.flavor,10)">+10</button>
+              <button data-flavor="${escaparHTML(nombre)}" onclick="window.restarTemp(this.dataset.flavor,1)">-1</button>
             </td>
           ` : ''}
         </tr>
-      `).join('')}
+      `}).join('')}
+      </tbody>
     </table>
     <div style="margin:15px 0 10px 0; font-weight:bold;">
       <label>ANILLOS: <span id="total-anillos">${totalAnillos}</span></label> &nbsp;&nbsp;
       <label>RELLENAS: <span id="total-rellenas">${totalRellenas}</span></label> &nbsp;&nbsp;
-      <label>ANTOJITOS: <span id="total-antojitos">${totalAntojitos}</span></label>
+      <label>ANTOJITOS: <span id="total-antojitos">${totalAntojitos}</span></label> &nbsp;&nbsp;
+      <label>TE LIMON: <span id="total-te-limon">${totalTeLimon} OZL</span></label> &nbsp;&nbsp;
+      <label>TE ARANDANOS: <span id="total-te-arandanos">${totalTeArandanos} OZL</span></label> &nbsp;&nbsp;
+      <label>CREMA BAVARIA: <span id="total-crema-bavaria">${totalCremaBavaria} OZ</span></label>
     </div>
     ${!soloVer ? `
       <div style="margin:10px 0;">
@@ -359,55 +532,91 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
 
 // Función para obtener la fecha en formato dd-mm-aaaa
 function getFechaStr() {
-  const fecha = new Date();
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const anio = fecha.getFullYear();
-  return `${dia}-${mes}-${anio}`; // formato: 08-06-2025
+  const fecha = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(new Date());
+  return fecha.replace(/\//g, '-');
 }
 
 // Guardar registro (nuevo o editado)
 window.guardarRegistro = function(id) {
-  const fechaStr = getFechaStr();
-  // Si es un registro nuevo, genera un ID con push()
-  let ref;
+  const fechaStr = tempFechaRegistro || getFechaStr();
+  const ref = db.ref('registros');
+  const botonGuardar = document.querySelector('#popup-registro button[onclick*="guardarRegistro"]');
+  if (botonGuardar) botonGuardar.disabled = true;
+
   if (id.startsWith('temp-')) {
-    ref = db.ref('registros').push();
-    id = ref.key;
-  } else {
-    ref = db.ref('registros/' + id);
+    const nuevoId = ref.push().key;
+    const nuevoRegistro = {
+      fecha: fechaStr,
+      donas: { ...tempDonas },
+      generado: false
+    };
+
+    ref.transaction(registros => {
+      const actualizados = registros || {};
+      if (existeRegistroConFecha(actualizados, fechaStr)) return;
+      actualizados[nuevoId] = nuevoRegistro;
+      return actualizados;
+    }, (error, committed) => {
+      if (error) {
+        console.error('No se pudo guardar el nuevo registro.', error);
+        alert('No se pudo guardar el registro. Revisa la conexión e inténtalo de nuevo.');
+        if (botonGuardar) botonGuardar.disabled = false;
+      } else if (!committed) {
+        alert(`Ya existe un registro para ${fechaStr}. No se guardó otro registro con la misma fecha.`);
+        if (botonGuardar) botonGuardar.disabled = false;
+      } else {
+        cerrarPopup();
+      }
+    }, false);
+    return;
   }
-  ref.set({
-    fecha: fechaStr,
-    donas: { ...tempDonas },
-    generado: false
-  }).then(() => {
-    tempDonas = {};
-    cerrarPopup();
+
+  const registroRef = ref.child(id);
+  registroRef.transaction(registro => {
+    if (!registro || registro.generado) return;
+    registro.fecha = registro.fecha || fechaStr;
+    registro.donas = { ...tempDonas };
+    registro.generado = false;
+    return registro;
+  }, (error, committed) => {
+    if (error) {
+      console.error('No se pudo guardar el registro.', error);
+      alert('No se pudo guardar el registro. Revisa la conexión e inténtalo de nuevo.');
+      if (botonGuardar) botonGuardar.disabled = false;
+    } else if (!committed) {
+      mostrarRegistroBloqueado(id, registroRef);
+    } else {
+      cerrarPopup();
+    }
   });
-  // Habilitar el botón generar después de guardar
-  const popup = document.getElementById('popup-registro');
-  if (popup) {
-    const btn = popup.querySelector('#generarBtn');
-    if (btn) btn.disabled = false;
-  }
 };
 
 // Generar registro (bloquear edición)
 window.generarRegistro = function(id) {
-  const fechaStr = getFechaStr();
   // Filtrar donas con valor distinto de 0
   const donasFiltradas = Object.fromEntries(
     Object.entries(tempDonas).filter(([_, cantidad]) => cantidad !== 0)
   );
-  let ref = db.ref('registros/' + id);
-  ref.set({
-    fecha: fechaStr,
-    donas: donasFiltradas,
-    generado: true
-  }).then(() => {
-    tempDonas = {};
-    cerrarPopup();
+  const ref = db.ref('registros/' + id);
+  ref.transaction(registro => {
+    if (!registro || registro.generado) return;
+    registro.donas = donasFiltradas;
+    registro.generado = true;
+    return registro;
+  }, (error, committed) => {
+    if (error) {
+      console.error('No se pudo generar el registro.', error);
+      alert('No se pudo generar el registro. Revisa la conexión e inténtalo de nuevo.');
+    } else if (!committed) {
+      mostrarRegistroBloqueado(id, ref);
+    } else {
+      cerrarPopup();
+    }
   });
 };
 
@@ -436,6 +645,7 @@ db.ref('registros').on('value', snapshot => {
 document.getElementById('nuevoRegistroBtn').onclick = nuevoRegistroPopup;
 
 let tempDonas = {};
+let tempFechaRegistro = null;
 
 window.eliminarRegistro = function(id) {
   if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
@@ -458,13 +668,21 @@ window.agregarDona = function(id) {
 
 // Guardar automáticamente si no es un registro nuevo
 function guardarAuto(id) {
-  // Solo guarda si NO es un registro nuevo (id real de Firebase)
-  if (!id.startsWith('temp-')) {
-    const fechaStr = getFechaStr();
-    db.ref('registros/' + id).set({
-      fecha: fechaStr,
-      donas: { ...tempDonas },
-      generado: false
-    });
-  }
+  if (id.startsWith('temp-')) return;
+
+  const ref = db.ref('registros/' + id);
+  ref.transaction(registro => {
+    if (!registro || registro.generado) return;
+    registro.fecha = registro.fecha || tempFechaRegistro || getFechaStr();
+    registro.donas = { ...tempDonas };
+    registro.generado = false;
+    return registro;
+  }, (error, committed) => {
+    if (error) {
+      console.error('No se pudieron guardar automáticamente los cambios.', error);
+      alert('No se pudieron guardar los cambios. Revisa la conexión e inténtalo de nuevo.');
+    } else if (!committed) {
+      mostrarRegistroBloqueado(id, ref);
+    }
+  });
 }

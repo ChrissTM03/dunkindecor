@@ -778,6 +778,53 @@ input:focus-visible {
   opacity: 0.55;
 }
 
+.modal-dialog .copy-button {
+  display: inline-grid;
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  margin-left: 6px;
+  padding: 5px;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.modal-dialog .copy-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.modal-dialog .copy-button:hover {
+  border-color: var(--record-control);
+  background: #fdf2f8;
+  color: var(--ink);
+}
+
+.modal-dialog .generated-record-table td:last-child {
+  width: auto;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.modal-dialog .column-copy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modal-dialog .column-copy-header .copy-button {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .modal-dialog > div[style] {
   display: flex;
   flex-wrap: wrap;
