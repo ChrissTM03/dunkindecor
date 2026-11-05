@@ -11,6 +11,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+let registrosActuales = {};
 
 const DONAS = [
   "Anillo Choco arcoiris",
@@ -47,19 +48,18 @@ function mostrarPopup(html) {
   if (!popup) {
     popup = document.createElement('div');
     popup.id = 'popup-registro';
-    popup.style.position = 'fixed';
-    popup.style.top = '0';
-    popup.style.left = '0';
-    popup.style.width = '100vw';
-    popup.style.height = '100vh';
-    popup.style.background = 'rgba(0,0,0,0.5)';
-    popup.style.display = 'flex';
-    popup.style.alignItems = 'center';
-    popup.style.justifyContent = 'center';
+    popup.className = 'modal-backdrop';
+    popup.setAttribute('role', 'presentation');
     document.body.appendChild(popup);
   }
-  // Elimina cualquier estilo inline en el div interno:
-  popup.innerHTML = `<div>${html}</div>`;
+  popup.innerHTML = `<div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="registro-title" tabindex="-1">${html}</div>`;
+  popup.querySelector('.modal-dialog').focus();
+  popup.onclick = event => {
+    if (event.target === popup) cerrarPopup();
+  };
+  popup.onkeydown = event => {
+    if (event.key === 'Escape') cerrarPopup();
+  };
 }
 function cerrarPopup() {
   let popup = document.getElementById('popup-registro');
@@ -67,42 +67,172 @@ function cerrarPopup() {
   tempDonas = {};
 }
 
+function fechaRegistroComoISO(fecha) {
+  const coincidencia = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fecha || '');
+  if (!coincidencia) return null;
+
+  const [, dia, mes, anio] = coincidencia;
+  const fechaLocal = new Date(Number(anio), Number(mes) - 1, Number(dia));
+  if (fechaLocal.getFullYear() !== Number(anio) ||
+      fechaLocal.getMonth() !== Number(mes) - 1 ||
+      fechaLocal.getDate() !== Number(dia)) {
+    return null;
+  }
+  return `${anio}-${mes}-${dia}`;
+}
+
+function actualizarResumen(registros) {
+  const valores = Object.values(registros);
+  const generados = valores.filter(registro => registro && registro.generado).length;
+  document.getElementById('resumen-total').textContent = valores.length;
+  document.getElementById('resumen-generados').textContent = generados;
+  document.getElementById('resumen-editables').textContent = valores.length - generados;
+}
+
+function escaparHTML(valor) {
+  return String(valor).replace(/[&<>"']/g, caracter => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[caracter]);
+}
+
+function obtenerFechaISOHoy() {
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
+window.abrirConsolidado = function() {
+  const panel = document.getElementById('consolidado-panel');
+  const hoy = obtenerFechaISOHoy();
+  const fechaDesde = document.getElementById('fecha-desde');
+  if (!fechaDesde.value) fechaDesde.value = `${hoy.slice(0, 7)}-01`;
+  const fechaHasta = document.getElementById('fecha-hasta');
+  if (!fechaHasta.value) fechaHasta.value = hoy;
+  panel.hidden = false;
+  fechaDesde.focus();
+};
+
+window.cerrarConsolidado = function() {
+  document.getElementById('consolidado-panel').hidden = true;
+  document.getElementById('consolidadoProdBtn').focus();
+};
+
+function calcularConsolidado(event) {
+  event.preventDefault();
+  const fechaDesde = document.getElementById('fecha-desde').value;
+  const fechaHasta = document.getElementById('fecha-hasta').value;
+  const resultado = document.getElementById('resultado-consolidado');
+
+  if (fechaDesde > fechaHasta) {
+    resultado.innerHTML = '<p class="form-message form-message--error">La fecha «Desde» debe ser anterior o igual a «Hasta».</p>';
+    document.getElementById('fecha-desde').focus();
+    return;
+  }
+
+  let fechasInvalidas = 0;
+  const registrosEnRango = Object.values(registrosActuales).filter(registro => {
+    if (!registro) return false;
+    const fecha = fechaRegistroComoISO(registro.fecha);
+    if (!fecha) {
+      fechasInvalidas += 1;
+      return false;
+    }
+    return fecha >= fechaDesde && fecha <= fechaHasta;
+  });
+
+  const cantidades = {};
+  let totalUnidades = 0;
+  registrosEnRango.forEach(registro => {
+    Object.entries(registro.donas || {}).forEach(([nombre, cantidad]) => {
+      const valor = Number(cantidad);
+      if (Number.isFinite(valor) && valor > 0) {
+        cantidades[nombre] = (cantidades[nombre] || 0) + valor;
+        totalUnidades += valor;
+      }
+    });
+  });
+
+  const filas = Object.entries(cantidades).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  const generados = registrosEnRango.filter(registro => registro.generado).length;
+  const filasHTML = filas.map(([nombre, cantidad]) => `
+    <tr><td>${escaparHTML(nombre)}</td><td>${cantidad}</td></tr>
+  `).join('');
+  const avisoFechas = fechasInvalidas
+    ? `<p class="form-message">${fechasInvalidas} ${fechasInvalidas === 1 ? 'registro tiene' : 'registros tienen'} una fecha no válida y ${fechasInvalidas === 1 ? 'fue omitido' : 'fueron omitidos'}.</p>`
+    : '';
+
+  if (registrosEnRango.length === 0) {
+    resultado.innerHTML = `
+      <p class="table-empty"><strong>No hay registros en este rango</strong><span>Prueba con otras fechas para consultar la producción.</span></p>
+      ${avisoFechas}
+    `;
+    return;
+  }
+
+  resultado.innerHTML = `
+    <div class="consolidation-summary">
+      <div><span>Registros incluidos</span><strong>${registrosEnRango.length}</strong></div>
+      <div><span>Donas contabilizadas</span><strong>${totalUnidades}</strong></div>
+      <div><span>Generados</span><strong>${generados}</strong></div>
+    </div>
+    ${filas.length ? `
+      <div class="table-scroll">
+        <table class="records-table consolidation-table">
+          <thead><tr><th scope="col">Tipo de dona</th><th scope="col">Cantidad total</th></tr></thead>
+          <tbody>${filasHTML}</tbody>
+        </table>
+      </div>
+    ` : '<p class="table-empty"><strong>Sin cantidades registradas</strong><span>Los registros del rango no contienen cantidades mayores que cero.</span></p>'}
+    ${avisoFechas}
+  `;
+}
+
+document.getElementById('consolidado-form').addEventListener('submit', calcularConsolidado);
+
 // Mostrar todos los registros en la tabla principal
 function renderTablaRegistros(registros) {
   const contenedor = document.getElementById('tabla-registros');
-  contenedor.innerHTML = ''; // Limpia el contenedor antes de agregar la tabla
-  const tabla = document.createElement('table');
-  // Ordenar los registros por fecha descendente (más reciente primero)
+  actualizarResumen(registros);
+  const entradas = Object.entries(registros);
+  if (entradas.length === 0) {
+    contenedor.innerHTML = '<div class="table-empty"><strong>Aún no hay registros</strong><span>Cuando crees un registro, aparecerá aquí.</span></div>';
+    return;
+  }
+
   const registrosOrdenados = Object.entries(registros).sort((a, b) => {
-    // Extraer fechas en formato dd-mm-aaaa y convertirlas a objetos Date
-    const [da, ma, aa] = a[1].fecha.split('-');
-    const [db, mb, ab] = b[1].fecha.split('-');
-    const fechaA = new Date(`${aa}-${ma}-${da}`);
-    const fechaB = new Date(`${ab}-${mb}-${db}`);
-    // Si las fechas son iguales, usar la clave (id) para desempatar (más reciente primero)
-    if (fechaA.getTime() === fechaB.getTime()) {
-      return b[0].localeCompare(a[0]);
-    }
-    return fechaB - fechaA;
+    const fechaA = fechaRegistroComoISO(a[1].fecha) || '';
+    const fechaB = fechaRegistroComoISO(b[1].fecha) || '';
+    return fechaB.localeCompare(fechaA) || b[0].localeCompare(a[0]);
   });
-  tabla.innerHTML = `
-    <tr>
-      <th>Fecha</th>
-      <th>Estado</th>
-      <th>Acciones</th>
-    </tr>
-    ${registrosOrdenados.map(([id, data]) => `
-      <tr>
-        <td>${data.fecha}</td>
-        <td>${data.generado ? 'GENERADO' : 'EDITABLE'}</td>
-        <td>
-          <button onclick="verRegistro('${id}')">VER</button>
-          <button onclick="eliminarRegistro('${id}')">ELIMINAR</button>
-        </td>
-      </tr>
-    `).join('')}
+  contenedor.innerHTML = `
+    <div class="table-scroll">
+      <table class="records-table">
+        <thead>
+          <tr><th scope="col">Fecha</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr>
+        </thead>
+        <tbody>
+          ${registrosOrdenados.map(([id, data]) => `
+            <tr>
+              <td><span class="record-date">${data.fecha || 'Sin fecha'}</span></td>
+              <td><span class="status-badge ${data.generado ? 'status-badge--generated' : 'status-badge--editable'}">
+                <span aria-hidden="true"></span>${data.generado ? 'Generado' : 'Editable'}
+              </span></td>
+              <td class="record-actions">
+                <button class="table-action" type="button" onclick="verRegistro('${id}')">Ver registro</button>
+                <button class="table-action table-action--danger" type="button" onclick="eliminarRegistro('${id}')">Eliminar</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
-  contenedor.appendChild(tabla);
 }
 
 // Abrir popup para ver o editar un registro
@@ -179,7 +309,7 @@ function renderRegistroDetalle(id, data, soloVer, esNuevo = false) {
     }
   });
 
-  let html = `<h2>Registro ${data.fecha}</h2>
+  let html = `<h2 id="registro-title">Registro ${data.fecha}</h2>
     <table>
       <tr>
         <th>Nombre Dona</th>
@@ -283,15 +413,27 @@ window.generarRegistro = function(id) {
 
 // Mostrar todos los registros al cargar la página y actualizar en tiempo real
 db.ref('registros').on('value', snapshot => {
-  const registros = snapshot.val() || {};
-  renderTablaRegistros(registros);
+  registrosActuales = snapshot.val() || {};
+  const indicador = document.getElementById('connection-indicator');
+  indicador.classList.remove('connection-indicator--error');
+  document.getElementById('connection-title').textContent = 'Datos sincronizados';
+  document.getElementById('connection-detail').textContent = 'Actualización en tiempo real';
+  renderTablaRegistros(registrosActuales);
+}, error => {
+  const indicador = document.getElementById('connection-indicator');
+  indicador.classList.add('connection-indicator--error');
+  document.getElementById('connection-title').textContent = 'Sin acceso a los registros';
+  document.getElementById('connection-detail').textContent = 'Verifica conexión o permisos';
+  document.getElementById('tabla-registros').innerHTML = `
+    <div class="table-empty table-empty--error">
+      <strong>No se pudieron cargar los registros</strong>
+      <span>Verifica la conexión y los permisos de acceso. ${escaparHTML(error.message)}</span>
+    </div>
+  `;
 });
 
 // Botón para crear nuevo registro
 document.getElementById('nuevoRegistroBtn').onclick = nuevoRegistroPopup;
-
-// Eliminar el detalle antiguo de la página principal
-document.getElementById('registro-detalle').innerHTML = '';
 
 let tempDonas = {};
 
@@ -306,10 +448,10 @@ window.agregarDona = function(id) {
   const nombre = input.value.trim();
   if (nombre && !tempDonas[nombre]) {
     tempDonas[nombre] = 0;
-    const fecha = document.querySelector('h2').textContent.replace('Registro ', '');
+    const fecha = document.getElementById('registro-title').textContent.replace('Registro ', '');
     // Solo actualiza el contenido del popup, no crea uno nuevo
-    document.querySelector('#popup-registro').innerHTML =
-      `<div>${renderRegistroDetalle(id, { fecha, donas: { ...tempDonas }, generado: false }, false, id.startsWith('temp-'))}</div>`;
+    document.querySelector('#popup-registro .modal-dialog').innerHTML =
+    renderRegistroDetalle(id, { fecha, donas: { ...tempDonas }, generado: false }, false, id.startsWith('temp-'));
   }
   input.value = '';
 };
