@@ -11,11 +11,14 @@ from zoneinfo import ZoneInfo
 TIME_ZONE = ZoneInfo("America/Bogota")
 
 
-def firebase_request(database_url, auth_token, path, method, payload=None):
-    url = f"{database_url.rstrip('/')}/{path}.json"
-    if auth_token:
-        url = f"{url}?{urlencode({'auth': auth_token})}"
+def read_json_response(request, timeout=30):
+    with urlopen(request, timeout=timeout) as response:
+        body = response.read()
+        return json.loads(body) if body else None
 
+
+def firebase_request(database_url, auth_token, path, method, payload=None):
+    url = f"{database_url.rstrip('/')}/{path}.json?{urlencode({'auth': auth_token})}"
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     request = Request(
         url,
@@ -24,30 +27,67 @@ def firebase_request(database_url, auth_token, path, method, payload=None):
         method=method,
     )
     try:
-        with urlopen(request, timeout=30) as response:
-            response_body = response.read()
-            return json.loads(response_body) if response_body else None
+        return read_json_response(request)
     except HTTPError as error:
-        print(f"Firebase request failed with HTTP {error.code}.", file=sys.stderr)
+        print(f"Firebase Realtime Database request failed with HTTP {error.code}.", file=sys.stderr)
         raise SystemExit(1) from None
     except URLError as error:
-        print(f"Could not connect to Firebase: {error.reason}", file=sys.stderr)
+        print(f"Could not connect to Firebase Realtime Database: {error.reason}", file=sys.stderr)
         raise SystemExit(1) from None
+
+
+def sign_in(api_key, email, password):
+    url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+    request = Request(
+        f"{url}?{urlencode({'key': api_key})}",
+        data=json.dumps({
+            "email": email,
+            "password": password,
+            "returnSecureToken": True,
+        }).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        result = read_json_response(request)
+    except HTTPError as error:
+        print(f"Firebase Authentication failed with HTTP {error.code}.", file=sys.stderr)
+        raise SystemExit(1) from None
+    except URLError as error:
+        print(f"Could not connect to Firebase Authentication: {error.reason}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    token = result.get("idToken") if isinstance(result, dict) else None
+    if not token:
+        print("Firebase Authentication returned no ID token.", file=sys.stderr)
+        raise SystemExit(1)
+    return token
 
 
 def main():
     database_url = os.environ.get("FIREBASE_DATABASE_URL")
-    if not database_url:
-        print("FIREBASE_DATABASE_URL is required.", file=sys.stderr)
+    api_key = os.environ.get("FIREBASE_WEB_API_KEY")
+    email = os.environ.get("FIREBASE_AUTOMATION_EMAIL")
+    password = os.environ.get("FIREBASE_AUTOMATION_PASSWORD")
+    missing = [
+        name for name, value in (
+            ("FIREBASE_DATABASE_URL", database_url),
+            ("FIREBASE_WEB_API_KEY", api_key),
+            ("FIREBASE_AUTOMATION_EMAIL", email),
+            ("FIREBASE_AUTOMATION_PASSWORD", password),
+        ) if not value
+    ]
+    if missing:
+        print(f"Required environment variables are missing: {', '.join(missing)}.", file=sys.stderr)
         return 1
 
-    auth_token = os.environ.get("FIREBASE_DATABASE_AUTH_TOKEN", "")
-    today = datetime.now(TIME_ZONE).date()
+    auth_token = sign_in(api_key, email, password)
     records = firebase_request(database_url, auth_token, "registros", "GET") or {}
     if not isinstance(records, dict):
         print("Firebase returned an invalid registros value.", file=sys.stderr)
         return 1
 
+    today = datetime.now(TIME_ZONE).date()
     generated = 0
     invalid_dates = 0
     for record_id, record in records.items():

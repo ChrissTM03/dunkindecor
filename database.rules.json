@@ -1,0 +1,21 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "registros": {
+      ".read": "auth != null && (auth.uid === 'xnyOtwJ6EmU52Uyvv3GTsdwC7G42' || auth.uid === 'QefolDuUlZQZUZPmGajLvZfszDC2')",
+      ".write": "auth != null && (auth.uid === 'xnyOtwJ6EmU52Uyvv3GTsdwC7G42' || auth.uid === 'QefolDuUlZQZUZPmGajLvZfszDC2')",
+      "$recordId": {
+        ".validate": "newData.hasChildren(['fecha', 'generado']) && newData.child('fecha').isString() && newData.child('fecha').val().matches(/^[0-3][0-9]-[0-1][0-9]-[0-9]{4}$/) && newData.child('generado').isBoolean() && (newData.child('donas').hasChildren() || newData.child('donas').val() == null)",
+        "donas": {
+          "$dona": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

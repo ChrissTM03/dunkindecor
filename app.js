@@ -11,7 +11,56 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
 let registrosActuales = {};
+let registrosListener = null;
+
+const accessScreen = document.getElementById('access-screen');
+const appShell = document.getElementById('app-shell');
+const accessForm = document.getElementById('access-form');
+const accessEmailInput = document.getElementById('access-email');
+const accessPasswordInput = document.getElementById('access-password');
+const accessSubmit = document.getElementById('access-submit');
+const accessMessage = document.getElementById('access-message');
+const logoutButton = document.getElementById('logout-button');
+
+const authorizedStaffUids = [
+  'xnyOtwJ6EmU52Uyvv3GTsdwC7G42',
+  'QefolDuUlZQZUZPmGajLvZfszDC2'
+];
+accessSubmit.disabled = false;
+
+accessForm.addEventListener('submit', event => {
+  event.preventDefault();
+  accessSubmit.disabled = true;
+  accessMessage.classList.remove('form-message--error');
+  accessMessage.textContent = 'Iniciando sesión…';
+
+  auth.signInWithEmailAndPassword(
+    accessEmailInput.value.trim(),
+    accessPasswordInput.value
+  )
+    .then(() => {
+      accessPasswordInput.value = '';
+      accessMessage.textContent = '';
+    })
+    .catch(error => {
+      console.error('No se pudo iniciar sesión.', error);
+      accessMessage.textContent = 'No se pudo iniciar sesión. Revisa el correo y la contraseña de la cuenta autorizada.';
+      accessMessage.classList.add('form-message--error');
+      accessPasswordInput.focus();
+    })
+    .finally(() => {
+      accessSubmit.disabled = false;
+    });
+});
+
+logoutButton.addEventListener('click', () => {
+  auth.signOut().catch(error => {
+    console.error('No se pudo cerrar la sesión.', error);
+    alert('No se pudo cerrar la sesión. Inténtalo de nuevo.');
+  });
+});
 
 const DONAS = [
   "Anillo Choco arcoiris",
@@ -620,25 +669,58 @@ window.generarRegistro = function(id) {
   });
 };
 
-// Mostrar todos los registros al cargar la página y actualizar en tiempo real
-db.ref('registros').on('value', snapshot => {
-  registrosActuales = snapshot.val() || {};
-  const indicador = document.getElementById('connection-indicator');
-  indicador.classList.remove('connection-indicator--error');
-  document.getElementById('connection-title').textContent = 'Datos sincronizados';
-  document.getElementById('connection-detail').textContent = 'Actualización en tiempo real';
-  renderTablaRegistros(registrosActuales);
-}, error => {
-  const indicador = document.getElementById('connection-indicator');
-  indicador.classList.add('connection-indicator--error');
-  document.getElementById('connection-title').textContent = 'Sin acceso a los registros';
-  document.getElementById('connection-detail').textContent = 'Verifica conexión o permisos';
-  document.getElementById('tabla-registros').innerHTML = `
-    <div class="table-empty table-empty--error">
-      <strong>No se pudieron cargar los registros</strong>
-      <span>Verifica la conexión y los permisos de acceso. ${escaparHTML(error.message)}</span>
-    </div>
-  `;
+function detenerSincronizacionRegistros() {
+  if (registrosListener) {
+    registrosListener.off();
+    registrosListener = null;
+  }
+}
+
+function iniciarSincronizacionRegistros() {
+  detenerSincronizacionRegistros();
+  registrosListener = db.ref('registros');
+  registrosListener.on('value', snapshot => {
+    registrosActuales = snapshot.val() || {};
+    const indicador = document.getElementById('connection-indicator');
+    indicador.classList.remove('connection-indicator--error');
+    document.getElementById('connection-title').textContent = 'Datos sincronizados';
+    document.getElementById('connection-detail').textContent = 'Actualización en tiempo real';
+    renderTablaRegistros(registrosActuales);
+  }, error => {
+    const indicador = document.getElementById('connection-indicator');
+    indicador.classList.add('connection-indicator--error');
+    document.getElementById('connection-title').textContent = 'Sin acceso a los registros';
+    document.getElementById('connection-detail').textContent = 'Verifica conexión o permisos';
+    document.getElementById('tabla-registros').innerHTML = `
+      <div class="table-empty table-empty--error">
+        <strong>No se pudieron cargar los registros</strong>
+        <span>Verifica la conexión y los permisos de acceso. ${escaparHTML(error.message)}</span>
+      </div>
+    `;
+  });
+}
+
+auth.onAuthStateChanged(user => {
+  detenerSincronizacionRegistros();
+  if (!user) {
+    appShell.hidden = true;
+    accessScreen.hidden = false;
+    accessEmailInput.focus();
+    return;
+  }
+
+  if (!authorizedStaffUids.includes(user.uid)) {
+    accessMessage.textContent = 'Esta cuenta no está autorizada para consultar los registros.';
+    accessMessage.classList.add('form-message--error');
+    auth.signOut().catch(error => {
+      console.error('No se pudo cerrar la sesión de una cuenta no autorizada.', error);
+    });
+    return;
+  }
+
+  accessScreen.hidden = true;
+  appShell.hidden = false;
+  iniciarSincronizacionRegistros();
 });
 
 // Botón para crear nuevo registro
