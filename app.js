@@ -14,7 +14,6 @@ const db = firebase.database();
 
 const DONAS = [
   "Anillo Choco arcoiris",
-  "Anillo Araña",
   "Anillo Chocolate",
   "Anillo Fresa arcoiris",
   "Anillo Vainilla arcoiris",
@@ -23,12 +22,9 @@ const DONAS = [
   "Anillo Glaseado",
   "Anillo Vainilla oreo",
   "Anillo Indecisa",
-  "Cuadrada Dracula",
   "Rellena Manjar",
   "Rellena Chocomanjar",
   "Rellena Carita Feliz",
-  "Rellena Calavera",
-  "Rellena Frankenstein",
   "Rellena Manjar Oreo",
   "Rellena Cookie Monster",
   "Rellena Bavaria",
@@ -38,7 +34,11 @@ const DONAS = [
   "Antojito Manjar",
   "Antojito Glaseado",
   "Antojito Mora",
-  "Antojito Bavaria"
+  "Antojito Bavaria",
+  "Crema Bavaria",
+  "Te Limon",
+  "Te Arandanos",
+  "Glucosa"
 ];
 
 // Utilidad para crear popups simples
