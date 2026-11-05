@@ -16,7 +16,24 @@
     FIRST VIEWPORT: Navegación lateral, título y acciones; debajo, estado resumido y registros recientes en una tabla amplia.
     FORM: Tablero operativo de producción; prioriza escaneo, acciones directas y densidad legible en escritorio y móvil.
   -->
-  <div class="app-shell">
+  <section id="access-screen" class="access-screen" aria-labelledby="access-title">
+    <div class="access-card">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <p class="sidebar-label">CONTROL DE PRODUCCIÓN</p>
+      <h1 id="access-title">Acceso al equipo</h1>
+      <p>Inicia sesión con la cuenta del equipo autorizada.</p>
+      <form id="access-form">
+        <label for="access-email">Correo del equipo</label>
+        <input id="access-email" name="email" type="email" autocomplete="username" required>
+        <label for="access-password">Contraseña</label>
+        <input id="access-password" name="password" type="password" autocomplete="current-password" required>
+        <button id="access-submit" class="button button--primary" type="submit" disabled>Ingresar</button>
+        <p id="access-message" class="form-message" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell" hidden>
     <aside class="sidebar" aria-label="Navegación principal">
       <a class="brand" href="#inicio" aria-label="Dunkin' Decor, inicio">
         <span class="brand-mark" aria-hidden="true">D</span>
@@ -50,7 +67,10 @@
     <main class="main-content" id="inicio">
       <header class="topbar">
         <p><span>Operaciones</span><span class="crumb-divider" aria-hidden="true">/</span> Producción</p>
-        <span class="topbar-context"><span class="context-dot" aria-hidden="true"></span> Decoración de donas</span>
+        <div class="topbar-tools">
+          <span class="topbar-context"><span class="context-dot" aria-hidden="true"></span> Decoración de donas</span>
+          <button id="logout-button" class="button button--secondary button--compact" type="button">Salir</button>
+        </div>
       </header>
 
       <div class="page-content">
@@ -128,6 +148,7 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="app.js"></script>
 </body>
