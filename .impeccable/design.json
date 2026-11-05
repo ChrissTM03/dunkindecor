@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-05T01:11:23-05:00",
+  "title": "Design System: Decoración de Producción",
+  "extensions": {
+    "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "Fondo frío",
+        "canonical": "#f3f5f7",
+        "tonalRamp": ["#1a2025", "#343d45", "#525e68", "#727f89", "#929ea7", "#b2bdc5", "#d4dce1", "#f3f5f7"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Blanco de superficie",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#202427", "#3c4246", "#5a6267", "#798287", "#9aa2a7", "#bac1c5", "#dce0e2", "#ffffff"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Azul carbón",
+        "canonical": "#172635",
+        "tonalRamp": ["#0b1118", "#101b25", "#172635", "#334351", "#53616c", "#74808a", "#a9b3bb", "#f0f3f5"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Gris pizarra",
+        "canonical": "#687887",
+        "tonalRamp": ["#20272d", "#35414a", "#4d5b66", "#687887", "#84919b", "#a4afb7", "#c5cdd2", "#f3f5f6"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Gris de línea",
+        "canonical": "#e2e7eb",
+        "tonalRamp": ["#202427", "#3c4246", "#5a6267", "#798287", "#9aa2a7", "#bac1c5", "#dce0e2", "#e2e7eb"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Naranja de acción",
+        "canonical": "#e85c32",
+        "tonalRamp": ["#35170f", "#632819", "#91391f", "#c14a27", "#e85c32", "#ef8969", "#f6b49f", "#fff0e9"]
+      },
+      "accent-strong": {
+        "role": "primary",
+        "displayName": "Naranja profundo",
+        "canonical": "#ca4927",
+        "tonalRamp": ["#2e130c", "#561f12", "#7d2c19", "#a43b21", "#ca4927", "#df795d", "#efad9b", "#fce9e3"]
+      },
+      "record-control": {
+        "role": "primary",
+        "displayName": "Magenta de registro",
+        "canonical": "#da1884",
+        "tonalRamp": ["#260a18", "#4a102d", "#731444", "#9e155d", "#c91875", "#da1884", "#e77baa", "#f2b2d0"]
+      },
+      "record-control-hover": {
+        "role": "primary",
+        "displayName": "Naranja original de registro",
+        "canonical": "#ff671f",
+        "tonalRamp": ["#2b1003", "#572106", "#84300b", "#b64210", "#e35317", "#ff671f", "#ff9e70", "#ffd6c4"]
+      },
+      "generated": {
+        "role": "tertiary",
+        "displayName": "Verde generado",
+        "canonical": "#237b57",
+        "tonalRamp": ["#10271d", "#16402e", "#1c5a3f", "#237b57", "#4c956f", "#79b08e", "#a9cdb8", "#e9f5ef"]
+      },
+      "editable": {
+        "role": "secondary",
+        "displayName": "Ámbar editable",
+        "canonical": "#926016",
+        "tonalRamp": ["#2d1d08", "#4e330c", "#704910", "#926016", "#b5853d", "#c9a66c", "#dfc99e", "#fff4dc"]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Rojo de eliminación",
+        "canonical": "#a43e37",
+        "tonalRamp": ["#301211", "#511e1b", "#7a2c27", "#a43e37", "#bd6a63", "#d09994", "#e4c2bf", "#fff0ee"]
+      },
+      "focus": {
+        "role": "secondary",
+        "displayName": "Azul de foco",
+        "canonical": "#146fc1",
+        "tonalRamp": ["#081b2c", "#0c3150", "#104d7d", "#146fc1", "#4b8ac4", "#7da8d0", "#b3c9df", "#eaf3fb"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "System display",
+        "purpose": "Page title and primary section hierarchy."
+      },
+      "body": {
+        "displayName": "System body",
+        "purpose": "Operational content and supporting copy."
+      }
+    },
+    "shadows": [
+      {
+        "name": "record-dialog",
+        "value": "0 24px 70px rgb(7 20 31 / 28%)",
+        "purpose": "Separate the focused record dialog from the live table."
+      }
+    ],
+    "motion": [
+      {
+        "name": "panel-arrive",
+        "value": "260ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Reveal the inline consolidation panel once."
+      },
+      {
+        "name": "control-state",
+        "value": "140ms ease",
+        "purpose": "Keep button hover and focus state changes responsive."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tablet-navigation",
+        "value": "820px"
+      },
+      {
+        "name": "mobile-layout",
+        "value": "620px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-priority action for creating or calculating.",
+      "html": "<button class=\"ds-button-primary\">Nuevo registro</button>",
+      "css": ".ds-button-primary { min-height: 42px; padding: 0 16px; border: 0; border-radius: 7px; background: #e85c32; color: #fff; font: 650 13px 'Segoe UI', Arial, sans-serif; transition: background-color 140ms ease; } .ds-button-primary:hover { background: #ca4927; } .ds-button-primary:focus-visible { outline: 3px solid #146fc1; outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Lower-priority action that remains distinct from the main workflow.",
+      "html": "<button class=\"ds-button-secondary\">Consolidado</button>",
+      "css": ".ds-button-secondary { min-height: 42px; padding: 0 16px; border: 1px solid #d3dae0; border-radius: 7px; background: #fff; color: #172635; font: 650 13px 'Segoe UI', Arial, sans-serif; transition: background-color 140ms ease, border-color 140ms ease; } .ds-button-secondary:hover { border-color: #b6c1ca; background: #f7f8fa; } .ds-button-secondary:focus-visible { outline: 3px solid #146fc1; outline-offset: 3px; }"
+    },
+    {
+      "name": "Record Quantity Control",
+      "kind": "button",
+      "refersTo": "record-control",
+      "description": "Quantity controls keep the original magenta and orange project colors.",
+      "html": "<button class=\"ds-record-control\">+5</button>",
+      "css": ".ds-record-control { min-height: 32px; padding: 0 10px; border: 1px solid #da1884; border-radius: 5px; background: #da1884; color: #fff; font: 650 12px 'Segoe UI', Arial, sans-serif; } .ds-record-control:hover { border-color: #ff671f; background: #ff671f; color: #172635; } .ds-record-control:focus-visible { outline: 3px solid #146fc1; outline-offset: 3px; }"
+    },
+    {
+      "name": "Editable Status",
+      "kind": "chip",
+      "refersTo": "editable",
+      "description": "Amber badge pairs a state label with a status dot.",
+      "html": "<span class=\"ds-status-editable\"><span aria-hidden=\"true\"></span>Editable</span>",
+      "css": ".ds-status-editable { display: inline-flex; min-height: 25px; align-items: center; gap: 7px; padding: 0 9px; border-radius: 20px; background: #fff4dc; color: #926016; font: 650 11px 'Segoe UI', Arial, sans-serif; } .ds-status-editable span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }"
+    },
+    {
+      "name": "Generated Status",
+      "kind": "chip",
+      "refersTo": "generated",
+      "description": "Green badge pairs a generated-state label with a status dot.",
+      "html": "<span class=\"ds-status-generated\"><span aria-hidden=\"true\"></span>Generado</span>",
+      "css": ".ds-status-generated { display: inline-flex; min-height: 25px; align-items: center; gap: 7px; padding: 0 9px; border-radius: 20px; background: #e9f5ef; color: #237b57; font: 650 11px 'Segoe UI', Arial, sans-serif; } .ds-status-generated span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }"
+    },
+    {
+      "name": "Date Input",
+      "kind": "input",
+      "refersTo": "date-range-form",
+      "description": "Accessible date field for inclusive consolidation ranges.",
+      "html": "<label class=\"ds-date-field\"><span>Desde</span><input type=\"date\"></label>",
+      "css": ".ds-date-field { display: grid; min-width: 190px; gap: 7px; color: #445464; font: 650 12px 'Segoe UI', Arial, sans-serif; } .ds-date-field input { min-height: 40px; padding: 0 11px; border: 1px solid #cbd4db; border-radius: 6px; background: #fff; color: #172635; font: 400 13px 'Segoe UI', Arial, sans-serif; } .ds-date-field input:focus-visible { outline: 3px solid #146fc1; outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El tablero de turno",
+    "overview": "La interfaz convierte el trabajo repetido de registrar y revisar cantidades en un tablero operativo claro. Su tono es directo y profesional: cada estado se identifica con texto además de color, las acciones quedan junto al registro y los datos mantienen suficiente espacio para leerse de un vistazo. La identidad vive en una navegación azul carbón y un acento naranja reservado para la acción principal; los controles del registro mantienen el magenta y el naranja originales. El gris frío de fondo mantiene el foco en el trabajo.",
+    "keyCharacteristics": [
+      "Densidad de tabla legible, con controles próximos al registro.",
+      "Acento naranja para acciones primarias; estados con colores semánticos.",
+      "Navegación oscura y superficies claras para separar orientación y contenido."
+    ],
+    "rules": [
+      {
+        "name": "La Regla de Estado Explícito",
+        "body": "El estado de un registro siempre conserva su etiqueta textual; el color solo la refuerza.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Control Original",
+        "body": "Los botones del detalle conservan magenta #da1884 y hover naranja #ff671f.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do keep editable and generated labels visible alongside their status colors.",
+      "Do preserve date fields, keyboard focus rings, and mobile row actions."
+    ],
+    "donts": [
+      "Don't hide row actions behind horizontal scrolling on narrow screens.",
+      "Don't replace the records table with decorative metric cards."
+    ]
+  }
+}

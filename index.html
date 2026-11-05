@@ -3,17 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Producción Dunkin' Donuts</title>
+  <meta name="theme-color" content="#f4f6f8">
+  <meta name="description" content="Control de registros de producción y decoración de donas.">
+  <title>Producción | Dunkin' Decor</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Registro de Decoración de Donas</h1>
-  <div id="contenedor-tabla">
-    <button id="nuevoRegistroBtn">Nuevo registro</button>
-    <button id="consolidadoProdBtn">Consolidado</button>
-    <div id="tabla-registros"></div>
+  <!--
+    THESIS: Un tablero de turno para controlar la producción, no una tabla genérica.
+    OWN-WORLD: Superficie gris fría, tinta azul carbón y acentos coral-naranja con controles compactos de planta.
+    STORY: El equipo ve el estado de sus registros, ajusta cantidades y consolida cualquier rango de fechas.
+    FIRST VIEWPORT: Navegación lateral, título y acciones; debajo, estado resumido y registros recientes en una tabla amplia.
+    FORM: Tablero operativo de producción; prioriza escaneo, acciones directas y densidad legible en escritorio y móvil.
+  -->
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand" href="#inicio" aria-label="Dunkin' Decor, inicio">
+        <span class="brand-mark" aria-hidden="true">D</span>
+        <span class="brand-copy">
+          <strong>decoración</strong>
+          <small>CONTROL DE PRODUCCIÓN</small>
+        </span>
+      </a>
+
+      <div class="sidebar-group">
+        <p class="sidebar-label">OPERACIONES</p>
+        <a class="nav-link nav-link--active" href="#contenedor-tabla" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">▦</span>
+          Registros
+        </a>
+        <button class="nav-link" type="button" onclick="window.abrirConsolidado()">
+          <span class="nav-icon" aria-hidden="true">↗</span>
+          Consolidado
+        </button>
+      </div>
+
+      <div class="sidebar-bottom" id="connection-status" aria-live="polite">
+        <span id="connection-indicator" class="connection-indicator" aria-hidden="true"></span>
+        <div>
+          <strong id="connection-title">Conectando…</strong>
+          <small id="connection-detail">Esperando registros</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="inicio">
+      <header class="topbar">
+        <p><span>Operaciones</span><span class="crumb-divider" aria-hidden="true">/</span> Producción</p>
+        <span class="topbar-context"><span class="context-dot" aria-hidden="true"></span> Decoración de donas</span>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <h1 id="page-title">Control de decoración</h1>
+            <p>Registra cantidades, consulta el avance y consolida la producción.</p>
+          </div>
+          <div class="heading-actions">
+            <button id="consolidadoProdBtn" class="button button--secondary" type="button" onclick="window.abrirConsolidado()">
+              <span aria-hidden="true">▤</span>
+              Consolidado
+            </button>
+            <button id="nuevoRegistroBtn" class="button button--primary" type="button">
+              <span aria-hidden="true">＋</span>
+              Nuevo registro
+            </button>
+          </div>
+        </section>
+
+        <section class="overview" aria-label="Resumen de registros" aria-live="polite">
+          <div class="overview-item">
+            <span class="overview-label">Registros totales</span>
+            <strong id="resumen-total">—</strong>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Generados</span>
+            <strong id="resumen-generados">—</strong>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Editables</span>
+            <strong id="resumen-editables">—</strong>
+          </div>
+          <p class="overview-note"><span class="context-dot" aria-hidden="true"></span> Los cambios se sincronizan automáticamente</p>
+        </section>
+
+        <section id="consolidado-panel" class="consolidation-panel" aria-labelledby="consolidado-title" hidden>
+          <div class="consolidation-heading">
+            <div>
+              <h2 id="consolidado-title">Consolidado de producción</h2>
+              <p>Incluye todos los registros del periodo, tanto editables como generados.</p>
+            </div>
+            <button class="icon-button" type="button" aria-label="Cerrar consolidado" onclick="window.cerrarConsolidado()">×</button>
+          </div>
+          <form id="consolidado-form" class="date-range-form">
+            <label>
+              <span>Desde</span>
+              <input id="fecha-desde" name="fechaDesde" type="date" required>
+            </label>
+            <label>
+              <span>Hasta</span>
+              <input id="fecha-hasta" name="fechaHasta" type="date" required>
+            </label>
+            <button class="button button--primary" type="submit">Ver consolidado</button>
+          </form>
+          <div id="resultado-consolidado" class="consolidation-result" aria-live="polite">
+            <p>Elige un rango de fechas para consultar las cantidades.</p>
+          </div>
+        </section>
+
+        <section class="records-section" id="contenedor-tabla" aria-labelledby="records-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="records-title">Registros</h2>
+              <p>Consulta y administra los registros de producción.</p>
+            </div>
+            <span class="table-caption">Más recientes primero</span>
+          </div>
+          <div id="tabla-registros" class="table-container">
+            <div class="table-empty">Cargando registros…</div>
+          </div>
+        </section>
+      </div>
+    </main>
   </div>
-  <div id="registro-detalle"></div>
+
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="app.js"></script>
